@@ -9,7 +9,8 @@ init(autoreset=True)
 
 
 class CoursePair:
-    def __init__(self, local_name, local_syllabus, foreign_name, foreign_syllabus, porcRealSimilarity, lang=Language.SPANISH):
+    def __init__(self, local_name, local_syllabus, foreign_name, foreign_syllabus,
+                 porcRealSimilarity, lang=Language.SPANISH):
         self.local_name = local_name
         self.local_syllabus = local_syllabus
         self.foreign_name = foreign_name
@@ -32,8 +33,12 @@ class CoursePair:
 class SimilarityCalculator:
     def __init__(self, course_pair):
         self.nlp = course_pair.nlp
+        self.cleaned_localName = course_pair.cleaned_localName
+        self.cleaned_localSyllabus = course_pair.cleaned_localSyllabus
+        self.cleaned_foreignName = course_pair.cleaned_foreignName
+        self.cleaned_foreignSyllabus = course_pair.cleaned_foreignSyllabus
         self.porcRealSimilarity = course_pair.porcRealSimilarity
-        self.TOTAL_SIMILARITY = self.calculate_similarity(course_pair)
+        self.TOTAL_SIMILARITY = self.calculate_similarity()
         self.convalidable = self.calculate_Convalidable()
         self.efficiency = self.calculate_efficiency()
 
@@ -41,19 +46,20 @@ class SimilarityCalculator:
         efficiency = (100 - abs(self.porcRealSimilarity - self.TOTAL_SIMILARITY))
         return efficiency
 
-    def get_name_syllabus_similarity(self, course_pair):
-        docLocalName = self.nlp(course_pair.cleaned_localName)
-        docLocalSyllabus = self.nlp(course_pair.cleaned_localSyllabus)
-        docForeignName = self.nlp(course_pair.cleaned_foreignName)
-        docForeignSyllabus = self.nlp(course_pair.cleaned_foreignSyllabus)
-
+    def get_name_syllabus_similarity(self):
+        docLocalName = self.nlp(self.cleaned_localName)
+        docLocalSyllabus = self.nlp(self.cleaned_localSyllabus)
+        docForeignName = self.nlp(self.cleaned_foreignName)
+        docForeignSyllabus = self.nlp(self.cleaned_foreignSyllabus)
         namesSimilarity = (docLocalName.similarity(docForeignName))
+        #print(f"{docLocalName}, {docForeignName}, {namesSimilarity}")
         syllabusSimilarity = (docLocalSyllabus.similarity(docForeignSyllabus))
-
+        print(docForeignName, syllabusSimilarity)
         return namesSimilarity, syllabusSimilarity
 
-    def calculate_similarity(self, course_pair):
-        namesSimilarity, syllabusSimilarity = self.get_name_syllabus_similarity(course_pair)
+    def calculate_similarity(self):
+        namesSimilarity, syllabusSimilarity = self.get_name_syllabus_similarity()
+
         umbral = 0
 
         if namesSimilarity < 0.1:

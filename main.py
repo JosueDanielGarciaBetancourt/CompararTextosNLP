@@ -1,6 +1,6 @@
 print("Hola, a continuación simularemos convalidaciones de algunos cursos."
       "\nRecuerda que un curso se convalida si supera el 75% de similitud."
-      "\nEl proceso está iniciando, por favor espere...")
+      "\nEl proceso está iniciando, esto puede tardar de 10s a 30 seg...")
 
 from logica.configIdioma import LanguageConfig
 from logica.datosPrueba import CoursesData
