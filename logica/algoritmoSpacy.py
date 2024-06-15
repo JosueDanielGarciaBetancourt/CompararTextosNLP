@@ -1,11 +1,15 @@
-from enum import Enum
-import spacy
+import pandas as pd
 from colorama import Fore, Style, init
 from tabulate import tabulate
 from logica.configIdioma import Language, LanguageConfig
+import os
 
 # Inicializar colorama
 init(autoreset=True)
+
+# Inicializar los DataFrames globales
+df_es = pd.DataFrame()
+df_en = pd.DataFrame()
 
 
 class CoursePair:
@@ -52,9 +56,8 @@ class SimilarityCalculator:
         docForeignName = self.nlp(self.cleaned_foreignName)
         docForeignSyllabus = self.nlp(self.cleaned_foreignSyllabus)
         namesSimilarity = (docLocalName.similarity(docForeignName))
-        #print(f"{docLocalName}, {docForeignName}, {namesSimilarity}")
         syllabusSimilarity = (docLocalSyllabus.similarity(docForeignSyllabus))
-        print(docForeignName, syllabusSimilarity)
+
         return namesSimilarity, syllabusSimilarity
 
     def calculate_similarity(self):
@@ -63,13 +66,21 @@ class SimilarityCalculator:
         umbral = 0
 
         if namesSimilarity < 0.1:
+            umbral = 0.35
+        elif namesSimilarity < 0.2:
             umbral = 0.30
+        elif namesSimilarity < 0.3:
+            umbral = 0.25
         elif namesSimilarity < 0.4:
             umbral = 0.20
+        elif namesSimilarity < 0.5:
+            umbral = 0.15
         elif namesSimilarity < 0.6:
-            umbral = 0.10
+            umbral = -0.03
+        elif namesSimilarity < 0.7:
+            umbral = -0.05
         elif namesSimilarity < 0.8:
-            umbral = 0.05
+            umbral = -0.10
 
         TOTAL_SIMILARITY = syllabusSimilarity - umbral
 
@@ -100,6 +111,15 @@ class ConvalidationTable:
         self.efficiency = courseSimilarity_obj.efficiency
         self.lang = course_pair.lang
 
+        # Agregar los datos al DataFrame
+        df = self.add_to_dataframe()
+        if self.lang == Language.SPANISH:
+            global df_es
+            df_es = pd.concat([df_es, df], ignore_index=True)
+        elif self.lang == Language.ENGLISH:
+            global df_en
+            df_en = pd.concat([df_en, df], ignore_index=True)
+
     def getTableOrderNum(self):
         table = []
         orderNum = 0
@@ -126,11 +146,32 @@ class ConvalidationTable:
         return [Fore.BLUE + header + Style.RESET_ALL for header in headers]
 
     def display(self):
+        parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        datasetDirectory = os.path.join(parent_directory, "documentos/datasetNLP.csv")
+
         if self.lang == Language.SPANISH:
             headers = ["#", "Curso Local", "Sumilla Local", "Curso Postulante", "Sumilla Postulante", "Simil. Real (%)",
                        "Simil. Calculada (%)", "Convalidable", "Eficiencia (%)"]
             print(tabulate(table_es, headers=self.blue_headers(headers), tablefmt="fancy_grid"))
+            df_es.to_csv(datasetDirectory, index=False)
         elif self.lang == Language.ENGLISH:
             headers = ["#", "Curso Local", "Sumilla Local", "Curso Postulante", "Sumilla Postulante", "Simil. Real (%)",
                        "Simil. Calculada (%)", "Convalidable", "Eficiencia (%)"]
             print(tabulate(table_en, headers=self.blue_headers(headers), tablefmt="fancy_grid"))
+            df_en.to_csv(datasetDirectory, index=False)
+
+    def add_to_dataframe(self):
+        table, orderNum = self.getTableOrderNum()
+        data = {
+            "#": orderNum,
+            "Curso Local": self.local_name,
+            "Sumilla Local": self.local_syllabus,
+            "Curso Postulante": self.foreign_name,
+            "Sumilla Postulante": self.foreign_syllabus,
+            "Simil. Real (%)": self.porcRealSimilarity,
+            "Simil. Calculada (%)": f"{self.similarity:.2f}%",
+            "Convalidable": self.convalidable,
+            "Eficiencia (%)": self.efficiency
+        }
+        df = pd.DataFrame(data, index=[0])
+        return df

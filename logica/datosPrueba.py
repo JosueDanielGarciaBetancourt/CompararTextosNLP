@@ -10,7 +10,7 @@ def returnCSVDataFrameEsp():
 
         datasetDirectory = os.path.join(parent_directory, "documentos/datasetCursosCSV.csv")
 
-        df = pd.read_csv(datasetDirectory, delimiter=';', decimal='.')
+        df = pd.read_csv(datasetDirectory, encoding='UTF-8', delimiter=';', decimal='.')
 
         # Seleccionar los campos deseados
         fields = ['Nombre Curso Local', 'Silabo Curso Local', 'Nombre Curso Postulante',
